@@ -1,0 +1,38 @@
+# Python
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Flask
+instance/
+.env
+.flaskenv
+
+# Excel files
+*.xlsx
+!ConnUCMatrix.xlsx.sample
+~$*.xlsx
+
+# Checkpoints
+*.Edit1
+*.Edit2
+*.Edit3
+
+# Distribution
+dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

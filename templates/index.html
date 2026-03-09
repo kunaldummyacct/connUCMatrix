@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Connector Use Case Matrix</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        
+        .header { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); color: #1f2937; padding: 12px 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-bottom: 3px solid #667eea; }
+        .header-content { display: flex; justify-content: space-between; align-items: center; }
+        .header-left h1 { font-size: 20px; font-weight: 600; margin-bottom: 2px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .header-subtitle { font-size: 11px; color: #6b7280; }
+        .header-actions { display: flex; gap: 8px; align-items: center; }
+        
+        .btn { padding: 6px 14px; border: none; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4); }
+        .btn-secondary { background: white; color: #667eea; border: 2px solid #667eea; }
+        .btn-secondary:hover { background: #f0f4ff; transform: translateY(-1px); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .container { padding: 12px 24px; }
+        .controls-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; background: white; padding: 10px 16px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .stats-compact { display: flex; gap: 20px; }
+        .stat-item { display: flex; align-items: center; gap: 8px; }
+        .stat-item-label { font-size: 11px; color: #6b7280; font-weight: 600; text-transform: uppercase; }
+        .stat-item-value { font-size: 18px; font-weight: 700; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .stat-item:nth-child(2) .stat-item-value { background: linear-gradient(135deg, #10b981 0%, #059669 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .stat-item:nth-child(3) .stat-item-value { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .controls-actions { display: flex; gap: 8px; }
+        
+        .table-wrapper { background: white; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); overflow: auto; max-height: calc(100vh - 180px); position: relative; scroll-behavior: smooth; border: 2px solid #e5e7eb; }
+        .table-wrapper::-webkit-scrollbar { width: 12px; height: 12px; }
+        .table-wrapper::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 8px; }
+        .table-wrapper::-webkit-scrollbar-thumb { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; }
+        .table-wrapper::-webkit-scrollbar-thumb:hover { background: linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%); }
+        
+        #dataTable { width: 100%; border-collapse: collapse; font-size: 13px; }
+        #dataTable th { background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%); padding: 12px; text-align: center; border: 1px solid #e5e7eb; font-weight: 600; color: #374151; min-width: 120px; max-width: 250px; }
+        
+        /* Freeze all header rows when scrolling */
+        #dataTable thead tr:nth-child(1) th { position: sticky; top: 0; z-index: 20; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        #dataTable thead tr:nth-child(2) th { position: sticky; top: 45px; z-index: 20; background: linear-gradient(135deg, #818cf8 0%, #9333ea 100%); color: white; }
+        #dataTable thead tr:nth-child(3) th { position: sticky; top: 90px; z-index: 20; background: linear-gradient(135deg, #a78bfa 0%, #c084fc 100%); color: white; font-weight: 600; }
+        #dataTable thead tr:nth-child(4) th { position: sticky; top: 135px; z-index: 20; background: white; padding: 8px; }
+        #dataTable thead tr:nth-child(4) th input { width: 100%; padding: 6px 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 12px; transition: all 0.2s; }
+        #dataTable thead tr:nth-child(4) th input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.2); }
+        
+        /* Freeze first column - higher z-index so other columns slide under it */
+        #dataTable thead tr:nth-child(1) th:first-child { position: sticky; left: 0; z-index: 19; box-shadow: 3px 0 8px rgba(102, 126, 234, 0.15); border-right: 3px solid #667eea; }
+        #dataTable thead tr:nth-child(3) th:first-child { position: sticky; left: 0; z-index: 21; box-shadow: 3px 0 8px rgba(102, 126, 234, 0.15); border-right: 3px solid #667eea; }
+        #dataTable thead tr:nth-child(4) th:first-child { position: sticky; left: 0; z-index: 22; box-shadow: 3px 0 8px rgba(102, 126, 234, 0.15); border-right: 3px solid #667eea; }
+        #dataTable tbody tr td:first-child { position: sticky; left: 0; z-index: 10; box-shadow: 3px 0 8px rgba(102, 126, 234, 0.15); border-right: 3px solid #667eea; }
+        
+        /* Row 2 first-child is NOT column A (it's User Import), so remove frozen LEFT styling but keep sticky TOP */
+        #dataTable thead tr:nth-child(2) th:first-child { position: sticky !important; left: auto !important; z-index: 20 !important; box-shadow: none !important; border-right: 1px solid #e5e7eb !important; }
+        
+        /* Keep row 3 first column with proper gradient */
+        #dataTable thead tr:nth-child(3) th:first-child { background: linear-gradient(135deg, #a78bfa 0%, #c084fc 100%); }
+        #dataTable thead tr:nth-child(4) th:first-child { background: white; }
+        #dataTable tbody tr td:first-child { background: white; font-weight: 600; color: #667eea; }
+        
+        #dataTable td { background: white; vertical-align: top; border: 1px solid #e5e7eb; padding: 0; position: relative; min-width: 120px; max-width: 250px; }
+        #dataTable td.editing { background: #fef3c7; border: 2px solid #f59e0b; }
+        #dataTable td.changed { background: #dbeafe; border-left: 3px solid #3b82f6; }
+        #dataTable td .cell-content { padding: 8px; min-height: 36px; cursor: pointer; word-wrap: break-word; white-space: pre-wrap; }
+        #dataTable td .cell-content:hover { background: linear-gradient(135deg, #f0f4ff 0%, #faf5ff 100%); }
+        #dataTable td textarea { width: 100%; padding: 8px; border: 2px solid #667eea; border-radius: 0; font-size: 13px; min-height: 36px; resize: vertical; font-family: inherit; display: none; box-sizing: border-box; }
+        #dataTable td textarea:focus { outline: none; box-shadow: 0 0 0 3px rgba(102,126,234,0.2); }
+        #dataTable td select { width: 100%; padding: 8px; border: 2px solid #667eea; border-radius: 4px; font-size: 13px; font-family: inherit; display: none; background: white; cursor: pointer; }
+        #dataTable td select:focus { outline: none; box-shadow: 0 0 0 3px rgba(102,126,234,0.2); }
+        
+        #dataTable tbody tr:hover { background: linear-gradient(135deg, #f9fafb 0%, #faf5ff 100%); }
+        #dataTable tbody tr:nth-child(even) { background: linear-gradient(135deg, #fafbfc 0%, #faf5ff 100%); }
+        #dataTable tbody tr:nth-child(even):hover { background: linear-gradient(135deg, #f3f4f6 0%, #f3e8ff 100%); }
+        
+        .status-bar { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: white; border-radius: 8px; margin-top: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 4px solid #667eea; }
+        .status-message { font-size: 11px; color: #6b7280; font-weight: 500; }
+        .status-message.success { color: #059669; }
+        .status-message.error { color: #dc2626; }
+        .last-saved { font-size: 10px; color: #9ca3af; }
+        
+        .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .delete-btn { background: #dc2626; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; }
+        .delete-btn:hover { background: #b91c1c; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <h1>Connector Use Case Matrix</h1>
+                <div class="header-subtitle" id="lastSaved">Last saved: Never</div>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="controls-bar">
+            <div class="stats-compact">
+                <div class="stat-item">
+                    <span class="stat-item-label">Total:</span>
+                    <span class="stat-item-value" id="totalRows">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-item-label">Filtered:</span>
+                    <span class="stat-item-value" id="filteredRows">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-item-label">Unsaved:</span>
+                    <span class="stat-item-value" id="changedCells">0</span>
+                </div>
+            </div>
+            <div class="controls-actions">
+                <button class="btn btn-secondary" onclick="clearFilters()">Clear Filters</button>
+                <button class="btn btn-secondary" onclick="resetChanges()" id="resetBtn">Reset Changes</button>
+                <button class="btn btn-secondary" onclick="addRow()">➕ Add Row</button>
+                <button class="btn btn-primary" onclick="saveData()" id="saveBtn">
+                    <span id="saveBtnText">Save Changes</span>
+                </button>
+            </div>
+        </div>
+        
+        <div class="table-wrapper">
+            <table id="dataTable"></table>
+        </div>
+        
+        <div class="status-bar">
+            <div class="status-message" id="status"></div>
+            <div class="last-saved" id="lastSavedTime"></div>
+        </div>
+    </div>
+
+    <script>
+        let tableData = { headers: [], columns: [], data: [], merged_cells: [] };
+        let originalData = [];
+        let filters = {};
+        let changedCells = new Set();
+        let editingCell = null;
+        let autoSaveTimer = null;
+        let ynColumns = new Set(); // Track Y/N columns
+
+        async function loadData() {
+            const response = await fetch('/api/data');
+            tableData = await response.json();
+            originalData = JSON.parse(JSON.stringify(tableData.data));
+            
+            // Detect Y/N columns
+            detectYNColumns();
+            
+            renderTable();
+            updateStats();
+        }
+
+        function detectYNColumns() {
+            ynColumns.clear();
+            const { data } = tableData;
+            
+            // Check each column
+            for (let colIdx = 0; colIdx < tableData.columns.length; colIdx++) {
+                let hasYN = false;
+                let hasOther = false;
+                
+                for (let rowIdx = 0; rowIdx < Math.min(data.length, 50); rowIdx++) {
+                    const val = String(data[rowIdx][colIdx]).trim().toUpperCase();
+                    if (val === 'Y' || val === 'N' || val === 'NA' || val === '') {
+                        hasYN = true;
+                    } else {
+                        hasOther = true;
+                        break;
+                    }
+                }
+                
+                if (hasYN && !hasOther) {
+                    ynColumns.add(colIdx);
+                }
+            }
+        }
+
+        function renderTable() {
+            const { headers, columns, data, merged_cells } = tableData;
+            
+            let html = '<thead>';
+            
+            // Render all 3 header rows
+            for (let i = 0; i < headers.length; i++) {
+                html += '<tr>';
+                
+                let cellsRendered = 0;
+                
+                for (let j = 0; j < headers[i].length; j++) {
+                    // Check if this cell is covered by a merge from a previous row or column
+                    const isCovered = merged_cells.some(m => {
+                        const rowInRange = (i + 1) >= m.min_row && (i + 1) <= m.max_row;
+                        const colInRange = (j + 1) >= m.min_col && (j + 1) <= m.max_col;
+                        const isNotStart = !((i + 1) === m.min_row && (j + 1) === m.min_col);
+                        return rowInRange && colInRange && isNotStart;
+                    });
+                    
+                    if (isCovered) {
+                        continue;
+                    }
+                    
+                    // Check if this cell is the start of a merged range
+                    const merge = merged_cells.find(m => 
+                        m.min_row === i + 1 && m.min_col === j + 1
+                    );
+                    
+                    if (merge) {
+                        const colspan = merge.max_col - merge.min_col + 1;
+                        const rowspan = merge.max_row - merge.min_row + 1;
+                        html += `<th colspan="${colspan}" rowspan="${rowspan}">${headers[i][j] || ''}</th>`;
+                        cellsRendered += colspan;
+                    } else {
+                        html += `<th>${headers[i][j] || ''}</th>`;
+                        cellsRendered++;
+                    }
+                    
+                    // Add Actions column after we've rendered all data columns in row 3
+                    if (i === headers.length - 1 && cellsRendered === columns.length) {
+                        html += '<th>Actions</th>';
+                        break;
+                    }
+                }
+                
+                html += '</tr>';
+            }
+            
+            // Render filter row
+            html += '<tr>';
+            columns.forEach((col, j) => {
+                html += `<th><input type="text" placeholder="Filter..." onkeyup="debounceFilter(${j}, this.value)" value="${filters[j] || ''}"></th>`;
+            });
+            html += '<th></th>'; // Empty cell for Actions column
+            html += '</tr>';
+            
+            html += '</thead><tbody>';
+            document.getElementById('dataTable').innerHTML = html;
+            renderTableBody();
+        }
+
+        function renderTableBody() {
+            const { data } = tableData;
+            const filteredData = applyFilters(data);
+            
+            let html = '';
+            filteredData.forEach((row) => {
+                const originalIndex = data.indexOf(row);
+                html += '<tr>';
+                row.forEach((cell, j) => {
+                    const cellKey = `${originalIndex}-${j}`;
+                    const isChanged = changedCells.has(cellKey);
+                    const isYNColumn = ynColumns.has(j);
+                    
+                    if (isYNColumn) {
+                        html += `<td class="${isChanged ? 'changed' : ''}" onclick="editCell(this, ${originalIndex}, ${j})">
+                            <div class="cell-content">${escapeHtml(cell)}</div>
+                            <select onchange="saveCell(${originalIndex}, ${j}, this.value)" onblur="saveCell(${originalIndex}, ${j}, this.value)">
+                                <option value="Y" ${cell === 'Y' ? 'selected' : ''}>Y</option>
+                                <option value="N" ${cell === 'N' ? 'selected' : ''}>N</option>
+                                <option value="NA" ${cell === 'NA' ? 'selected' : ''}>NA</option>
+                                <option value="" ${cell === '' ? 'selected' : ''}></option>
+                            </select>
+                        </td>`;
+                    } else {
+                        html += `<td class="${isChanged ? 'changed' : ''}" onclick="editCell(this, ${originalIndex}, ${j})">
+                            <div class="cell-content">${escapeHtml(cell)}</div>
+                            <textarea onblur="saveCell(${originalIndex}, ${j}, this.value)" onkeydown="handleCellKeydown(event, ${originalIndex}, ${j})">${escapeHtml(cell)}</textarea>
+                        </td>`;
+                    }
+                });
+                
+                // Add delete button
+                html += `<td><button class="delete-btn" onclick="deleteRow(${originalIndex})">🗑️ Delete</button></td>`;
+                
+                html += '</tr>';
+            });
+            
+            document.querySelector('#dataTable tbody').innerHTML = html;
+            updateStats();
+        }
+
+        function editCell(td, row, col) {
+            if (editingCell) {
+                editingCell.classList.remove('editing');
+                const textarea = editingCell.querySelector('textarea');
+                const select = editingCell.querySelector('select');
+                if (textarea) {
+                    textarea.style.display = 'none';
+                }
+                if (select) {
+                    select.style.display = 'none';
+                }
+                editingCell.querySelector('.cell-content').style.display = 'block';
+            }
+            
+            td.classList.add('editing');
+            const textarea = td.querySelector('textarea');
+            const select = td.querySelector('select');
+            const content = td.querySelector('.cell-content');
+            content.style.display = 'none';
+            
+            if (select) {
+                select.style.display = 'block';
+                select.focus();
+            } else if (textarea) {
+                textarea.style.display = 'block';
+                textarea.focus();
+            }
+            
+            editingCell = td;
+        }
+
+        function saveCell(row, col, value) {
+            const oldValue = tableData.data[row][col];
+            if (oldValue !== value) {
+                tableData.data[row][col] = value;
+                changedCells.add(`${row}-${col}`);
+                // Auto-save disabled - user must save manually
+            }
+            
+            if (editingCell) {
+                editingCell.classList.remove('editing');
+                const textarea = editingCell.querySelector('textarea');
+                const select = editingCell.querySelector('select');
+                if (textarea) {
+                    textarea.style.display = 'none';
+                }
+                if (select) {
+                    select.style.display = 'none';
+                }
+                editingCell.querySelector('.cell-content').style.display = 'block';
+                editingCell.querySelector('.cell-content').textContent = value;
+                editingCell = null;
+            }
+            
+            renderTableBody();
+        }
+
+        function handleCellKeydown(event, row, col) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                event.target.blur();
+            } else if (event.key === 'Escape') {
+                event.target.value = tableData.data[row][col];
+                event.target.blur();
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        let filterTimeout;
+        function debounceFilter(colIndex, value) {
+            clearTimeout(filterTimeout);
+            filterTimeout = setTimeout(() => updateFilter(colIndex, value), 300);
+        }
+
+        function updateFilter(colIndex, value) {
+            if (value.trim() === '') {
+                delete filters[colIndex];
+            } else {
+                filters[colIndex] = value.toLowerCase();
+            }
+            renderTableBody();
+        }
+
+        function applyFilters(data) {
+            if (Object.keys(filters).length === 0) return data;
+            
+            return data.filter(row => {
+                return Object.entries(filters).every(([colIndex, filterValue]) => {
+                    const cellValue = String(row[colIndex] || '').toLowerCase();
+                    return cellValue.includes(filterValue);
+                });
+            });
+        }
+
+        function clearFilters() {
+            filters = {};
+            document.querySelectorAll('#dataTable thead tr:nth-child(4) input').forEach(input => {
+                input.value = '';
+            });
+            renderTableBody();
+        }
+
+        function resetChanges() {
+            if (changedCells.size === 0) {
+                return;
+            }
+            
+            if (!confirm(`Reset ${changedCells.size} unsaved change(s) to original values?`)) {
+                return;
+            }
+            
+            // Restore original data
+            tableData.data = JSON.parse(JSON.stringify(originalData));
+            changedCells.clear();
+            
+            const status = document.getElementById('status');
+            status.textContent = 'Changes reset to original values';
+            status.className = 'status-message';
+            setTimeout(() => status.textContent = '', 3000);
+            
+            renderTableBody();
+        }
+
+        function updateStats() {
+            const { data } = tableData;
+            const filteredData = applyFilters(data);
+            document.getElementById('totalRows').textContent = data.length;
+            document.getElementById('filteredRows').textContent = filteredData.length;
+            document.getElementById('changedCells').textContent = changedCells.size;
+        }
+
+        function scheduleAutoSave() {
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(() => saveData(true), 3000);
+        }
+
+        async function saveData(isAutoSave = false) {
+            const status = document.getElementById('status');
+            const saveBtn = document.getElementById('saveBtn');
+            const saveBtnText = document.getElementById('saveBtnText');
+            
+            if (!isAutoSave) {
+                saveBtn.disabled = true;
+                saveBtnText.innerHTML = '<span class="spinner"></span> Saving...';
+            }
+            status.textContent = 'Saving...';
+            status.className = 'status-message';
+            
+            const response = await fetch('/api/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    columns: tableData.columns,
+                    data: tableData.data 
+                })
+            });
+            
+            if (response.ok) {
+                changedCells.clear();
+                const now = new Date().toLocaleString();
+                status.textContent = isAutoSave ? 'Auto-saved successfully' : 'Saved successfully!';
+                status.className = 'status-message success';
+                document.getElementById('lastSaved').textContent = `Last saved: ${now}`;
+                document.getElementById('lastSavedTime').textContent = `Saved at ${now}`;
+                setTimeout(() => status.textContent = '', 3000);
+                renderTableBody();
+            } else {
+                status.textContent = 'Error saving data';
+                status.className = 'status-message error';
+            }
+            
+            if (!isAutoSave) {
+                saveBtn.disabled = false;
+                saveBtnText.textContent = 'Save Changes';
+            }
+        }
+
+        function logout() {
+            if (changedCells.size > 0) {
+                if (!confirm('You have unsaved changes. Are you sure you want to logout?')) {
+                    return;
+                }
+            }
+            window.location.href = '/logout';
+        }
+
+        function addRow() {
+            const newRow = new Array(tableData.columns.length).fill('');
+            tableData.data.push(newRow);
+            
+            // Mark all cells in new row as changed
+            const newRowIndex = tableData.data.length - 1;
+            for (let j = 0; j < tableData.columns.length; j++) {
+                changedCells.add(`${newRowIndex}-${j}`);
+            }
+            
+            renderTableBody();
+        }
+
+        function deleteRow(rowIndex) {
+            if (!confirm('Are you sure you want to delete this row?')) {
+                return;
+            }
+            
+            tableData.data.splice(rowIndex, 1);
+            
+            // Remove any changed cell markers for this row and update indices
+            const newChangedCells = new Set();
+            changedCells.forEach(key => {
+                const [row, col] = key.split('-').map(Number);
+                if (row < rowIndex) {
+                    newChangedCells.add(key);
+                } else if (row > rowIndex) {
+                    newChangedCells.add(`${row - 1}-${col}`);
+                }
+            });
+            changedCells.clear();
+            newChangedCells.forEach(key => changedCells.add(key));
+            
+            // Mark as changed by adding a dummy change marker
+            changedCells.add('row-deleted');
+            
+            renderTableBody();
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                saveData();
+            }
+        });
+
+        loadData();
+    </script>
+</body>
+</html>
