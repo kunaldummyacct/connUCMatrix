@@ -8,7 +8,7 @@ app.secret_key = os.urandom(24)
 
 # Look for Excel file in the same directory as this script
 EXCEL_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ConnUCMatrix.xlsx')
-ADMIN_PASSWORD = 'admin123'  # Change this
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')  # Set via environment variable or use default
 
 def login_required(f):
     @wraps(f)
@@ -21,10 +21,20 @@ def login_required(f):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        if request.form['password'] == ADMIN_PASSWORD:
+        login_type = request.form.get('login_type')
+        
+        if login_type == 'guest':
             session['logged_in'] = True
+            session['user_type'] = 'guest'
             return redirect('/')
-        return render_template('login.html', error='Invalid password')
+        elif login_type == 'admin':
+            if request.form.get('password') == ADMIN_PASSWORD:
+                session['logged_in'] = True
+                session['user_type'] = 'admin'
+                return redirect('/')
+            return render_template('login.html', error='Invalid admin password')
+        
+        return render_template('login.html', error='Please select login type')
     return render_template('login.html')
 
 @app.route('/logout')
@@ -35,7 +45,8 @@ def logout():
 @app.route('/')
 @login_required
 def index():
-    return render_template('index.html')
+    user_type = session.get('user_type', 'guest')
+    return render_template('index.html', user_type=user_type)
 
 @app.route('/api/data')
 @login_required
@@ -87,6 +98,10 @@ def get_data():
 @app.route('/api/update', methods=['POST'])
 @login_required
 def update_data():
+    # Check if user is admin
+    if session.get('user_type') != 'admin':
+        return jsonify({'error': 'Unauthorized: Admin access required'}), 403
+    
     from openpyxl import load_workbook
     
     payload = request.json

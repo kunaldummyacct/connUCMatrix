@@ -47,16 +47,14 @@
         #dataTable thead tr:nth-child(4) th input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.2); }
         
         /* Freeze first column - higher z-index so other columns slide under it */
-        #dataTable thead tr:nth-child(1) th:first-child { position: sticky; left: 0; z-index: 19; box-shadow: 3px 0 8px rgba(102, 126, 234, 0.15); border-right: 3px solid #667eea; }
-        #dataTable thead tr:nth-child(3) th:first-child { position: sticky; left: 0; z-index: 21; box-shadow: 3px 0 8px rgba(102, 126, 234, 0.15); border-right: 3px solid #667eea; }
-        #dataTable thead tr:nth-child(4) th:first-child { position: sticky; left: 0; z-index: 22; box-shadow: 3px 0 8px rgba(102, 126, 234, 0.15); border-right: 3px solid #667eea; }
-        #dataTable tbody tr td:first-child { position: sticky; left: 0; z-index: 10; box-shadow: 3px 0 8px rgba(102, 126, 234, 0.15); border-right: 3px solid #667eea; }
+        /* Only freeze cells that are actually in column 1 (not merged cells spanning from elsewhere) */
+        #dataTable thead tr:nth-child(1) th:first-child { position: sticky; left: 0; z-index: 21; box-shadow: 3px 0 8px rgba(102, 126, 234, 0.15); border-right: 3px solid #667eea; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        #dataTable thead tr:nth-child(3) th:first-child { position: sticky; left: 0; z-index: 21; box-shadow: 3px 0 8px rgba(102, 126, 234, 0.15); border-right: 3px solid #667eea; background: linear-gradient(135deg, #a78bfa 0%, #c084fc 100%); }
+        #dataTable thead tr:nth-child(4) th:first-child { position: sticky; left: 0; z-index: 22; box-shadow: 3px 0 8px rgba(102, 126, 234, 0.15); border-right: 3px solid #667eea; background: white; }
+        #dataTable tbody tr td:first-child { position: sticky; left: 0; z-index: 10; box-shadow: 3px 0 8px rgba(102, 126, 234, 0.15); border-right: 3px solid #667eea; background: white; font-weight: 600; color: #667eea; }
         
-        /* Row 2 first-child is NOT column A (it's User Import), so remove frozen LEFT styling but keep sticky TOP */
-        #dataTable thead tr:nth-child(2) th:first-child { position: sticky !important; left: auto !important; z-index: 20 !important; box-shadow: none !important; border-right: 1px solid #e5e7eb !important; }
-        
-        /* Keep row 3 first column with proper gradient */
-        #dataTable thead tr:nth-child(3) th:first-child { background: linear-gradient(135deg, #a78bfa 0%, #c084fc 100%); }
+        /* Row 2 first-child should NOT be frozen (it's part of merged cell from row 1) */
+        #dataTable thead tr:nth-child(2) th:first-child { position: sticky; top: 45px; left: auto; z-index: 20; }
         #dataTable thead tr:nth-child(4) th:first-child { background: white; }
         #dataTable tbody tr td:first-child { background: white; font-weight: 600; color: #667eea; }
         
@@ -65,6 +63,8 @@
         #dataTable td.changed { background: #dbeafe; border-left: 3px solid #3b82f6; }
         #dataTable td .cell-content { padding: 8px; min-height: 36px; cursor: pointer; word-wrap: break-word; white-space: pre-wrap; }
         #dataTable td .cell-content:hover { background: linear-gradient(135deg, #f0f4ff 0%, #faf5ff 100%); }
+        #dataTable.read-only td .cell-content { cursor: default; }
+        #dataTable.read-only td .cell-content:hover { background: transparent; }
         #dataTable td textarea { width: 100%; padding: 8px; border: 2px solid #667eea; border-radius: 0; font-size: 13px; min-height: 36px; resize: vertical; font-family: inherit; display: none; box-sizing: border-box; }
         #dataTable td textarea:focus { outline: none; box-shadow: 0 0 0 3px rgba(102,126,234,0.2); }
         #dataTable td select { width: 100%; padding: 8px; border: 2px solid #667eea; border-radius: 4px; font-size: 13px; font-family: inherit; display: none; background: white; cursor: pointer; }
@@ -92,10 +92,12 @@
         <div class="header-content">
             <div class="header-left">
                 <h1>Connector Use Case Matrix</h1>
-                <div class="header-subtitle" id="lastSaved">Last saved: Never</div>
+                <div class="header-subtitle">
+                    <span id="userTypeLabel"></span> | <span id="lastSaved">Last saved: Never</span>
+                </div>
             </div>
             <div class="header-actions">
-                <button class="btn btn-secondary" onclick="logout()">Logout</button>
+                <button class="btn btn-secondary" onclick="logout()" id="logoutBtn" style="display: none;">Logout</button>
             </div>
         </div>
     </div>
@@ -111,16 +113,16 @@
                     <span class="stat-item-label">Filtered:</span>
                     <span class="stat-item-value" id="filteredRows">0</span>
                 </div>
-                <div class="stat-item">
+                <div class="stat-item" id="unsavedStat" style="display: none;">
                     <span class="stat-item-label">Unsaved:</span>
                     <span class="stat-item-value" id="changedCells">0</span>
                 </div>
             </div>
             <div class="controls-actions">
                 <button class="btn btn-secondary" onclick="clearFilters()">Clear Filters</button>
-                <button class="btn btn-secondary" onclick="resetChanges()" id="resetBtn">Reset Changes</button>
-                <button class="btn btn-secondary" onclick="addRow()">➕ Add Row</button>
-                <button class="btn btn-primary" onclick="saveData()" id="saveBtn">
+                <button class="btn btn-secondary" onclick="resetChanges()" id="resetBtn" style="display: none;">Reset Changes</button>
+                <button class="btn btn-secondary" onclick="addRow()" id="addRowBtn" style="display: none;">➕ Add Row</button>
+                <button class="btn btn-primary" onclick="saveData()" id="saveBtn" style="display: none;">
                     <span id="saveBtnText">Save Changes</span>
                 </button>
             </div>
@@ -137,6 +139,9 @@
     </div>
 
     <script>
+        const userType = "{{ user_type }}"; // 'guest' or 'admin'
+        const isReadOnly = userType === 'guest';
+        
         let tableData = { headers: [], columns: [], data: [], merged_cells: [] };
         let originalData = [];
         let filters = {};
@@ -152,6 +157,26 @@
             
             // Detect Y/N columns
             detectYNColumns();
+            
+            // Show/hide buttons based on user type
+            if (!isReadOnly) {
+                document.getElementById('saveBtn').style.display = 'inline-flex';
+                document.getElementById('resetBtn').style.display = 'inline-flex';
+                document.getElementById('addRowBtn').style.display = 'inline-flex';
+                document.getElementById('unsavedStat').style.display = 'flex';
+                document.getElementById('logoutBtn').style.display = 'inline-flex';
+            }
+            
+            // Update user type label
+            const userTypeLabel = document.getElementById('userTypeLabel');
+            if (isReadOnly) {
+                userTypeLabel.textContent = '👤 Guest (Read-Only)';
+                userTypeLabel.style.color = '#6b7280';
+            } else {
+                userTypeLabel.textContent = '🔐 Admin';
+                userTypeLabel.style.color = '#667eea';
+                userTypeLabel.style.fontWeight = '600';
+            }
             
             renderTable();
             updateStats();
@@ -221,9 +246,11 @@
                         cellsRendered++;
                     }
                     
-                    // Add Actions column after we've rendered all data columns in row 3
+                    // Add Actions column after we've rendered all data columns in row 3 (only for admin)
                     if (i === headers.length - 1 && cellsRendered === columns.length) {
-                        html += '<th>Actions</th>';
+                        if (!isReadOnly) {
+                            html += '<th>Actions</th>';
+                        }
                         break;
                     }
                 }
@@ -236,7 +263,9 @@
             columns.forEach((col, j) => {
                 html += `<th><input type="text" placeholder="Filter..." onkeyup="debounceFilter(${j}, this.value)" value="${filters[j] || ''}"></th>`;
             });
-            html += '<th></th>'; // Empty cell for Actions column
+            if (!isReadOnly) {
+                html += '<th></th>'; // Empty cell for Actions column
+            }
             html += '</tr>';
             
             html += '</thead><tbody>';
@@ -275,17 +304,35 @@
                     }
                 });
                 
-                // Add delete button
-                html += `<td><button class="delete-btn" onclick="deleteRow(${originalIndex})">🗑️ Delete</button></td>`;
+                // Add delete button (only for admin)
+                if (!isReadOnly) {
+                    html += `<td><button class="delete-btn" onclick="deleteRow(${originalIndex})">🗑️ Delete</button></td>`;
+                } else {
+                    html += `<td></td>`; // Empty cell for guests
+                }
                 
                 html += '</tr>';
             });
             
             document.querySelector('#dataTable tbody').innerHTML = html;
+            
+            // Add read-only class if guest
+            const table = document.getElementById('dataTable');
+            if (isReadOnly) {
+                table.classList.add('read-only');
+            } else {
+                table.classList.remove('read-only');
+            }
+            
             updateStats();
         }
 
         function editCell(td, row, col) {
+            // Prevent editing for guest users
+            if (isReadOnly) {
+                return;
+            }
+            
             if (editingCell) {
                 editingCell.classList.remove('editing');
                 const textarea = editingCell.querySelector('textarea');

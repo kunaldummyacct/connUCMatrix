@@ -20,6 +20,12 @@ fi
 echo "Activating virtual environment..."
 source venv/bin/activate
 
+# Load environment variables from .env if it exists
+if [ -f .env ]; then
+    echo "Loading environment variables from .env..."
+    export $(cat .env | grep -v '^#' | xargs)
+fi
+
 echo "Starting application..."
 echo ""
 echo "========================================"
